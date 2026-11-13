@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BRIICKS_SYSTEM_INSTRUCTION,
+  buildOfflineConstructionReply,
   buildSystemInstruction,
   CHAT_STARTER_QUESTIONS_BY_LANG,
   parseChatSegments,
@@ -19,11 +20,12 @@ test('validateChatMessage rejects empty or oversized prompts and accepts valid q
   assert.equal(ok.text, 'How much for 1800 sqft turnkey home?');
 });
 
-test('sanitizeChatHistory trims, maps assistant role to model, and starts on user turn', () => {
+test('sanitizeChatHistory trims, maps assistant role to model, alternates cleanly, and ends on model', () => {
   const sanitized = sanitizeChatHistory([
     { role: 'assistant', text: 'Welcome to Briicks!' },
     { role: 'user', text: 'What is starting rate?' },
     { role: 'assistant', text: 'Starts from ₹2,350/sq.ft.' },
+    { role: 'user', text: 'Trailing failed prompt' },
   ]);
 
   assert.equal(sanitized.length, 2);
@@ -54,3 +56,14 @@ test('bilingual starter questions and system instructions configure English and 
   assert.match(BRIICKS_SYSTEM_INSTRUCTION, /₹2,350/);
   assert.match(BRIICKS_SYSTEM_INSTRUCTION, /Annanagar East/);
 });
+
+test('buildOfflineConstructionReply computes sq.ft budgets and answers Tamil and English topics cleanly', () => {
+  const costReply = buildOfflineConstructionReply('Estimate cost for 2000 sq.ft G+1 house', 'en');
+  assert.match(costReply, /2,000 sq\.ft/);
+  assert.match(costReply, /47,00,000/);
+
+  const tamilSoilReply = buildOfflineConstructionReply('மண் பரிசோதனை (Soil Testing) ஏன் அவசியம்?', 'ta');
+  assert.match(tamilSoilReply, /மண் பரிசோதனை/);
+  assert.match(tamilSoilReply, /\+91 96008 10952/);
+});
+

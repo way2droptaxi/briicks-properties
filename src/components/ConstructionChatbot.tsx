@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
+  buildOfflineConstructionReply,
   CHAT_STARTER_QUESTIONS_BY_LANG,
   parseChatSegments,
   type ChatLanguage,
@@ -213,7 +214,25 @@ export function ConstructionChatbot({ onBookConsultation }: ConstructionChatbotP
         }),
       });
 
-      const payload = (await response.json()) as { reply?: string; error?: string };
+      const rawResponseText = await response.text();
+      let payload: { reply?: string; error?: string } | null = null;
+      if (rawResponseText) {
+        try {
+          payload = JSON.parse(rawResponseText) as { reply?: string; error?: string };
+        } catch {
+          payload = null;
+        }
+      }
+
+      // If /api/chat returns 404/non-JSON (e.g. static preview) or 503 (key not configured on external host),
+      // answer seamlessly using verified Briicks Properties bilingual engineering knowledge.
+      if (response.status === 404 || response.status === 503 || !payload) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', text: buildOfflineConstructionReply(trimmed, language) },
+        ]);
+        return;
+      }
 
       if (!response.ok || !payload.reply) {
         setError(payload.error || copy.fallbackError);
@@ -222,7 +241,10 @@ export function ConstructionChatbot({ onBookConsultation }: ConstructionChatbotP
 
       setMessages((prev) => [...prev, { role: 'assistant', text: payload.reply! }]);
     } catch {
-      setError(copy.networkError);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: buildOfflineConstructionReply(trimmed, language) },
+      ]);
     } finally {
       setLoading(false);
     }
