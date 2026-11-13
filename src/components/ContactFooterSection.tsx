@@ -1,12 +1,20 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { CheckCircle2, Mail, MapPin, PhoneCall, Send } from 'lucide-react';
+import { CheckCircle2, Loader2, Lock, Mail, MapPin, PhoneCall, Send } from 'lucide-react';
 import { motion } from 'motion/react';
 import { BRAND_INFO, SERVICES } from '../data/briicksData';
 import {
+  formatFriendlyFirestoreError,
+  submitAppointment,
+  subscribeToNewsletter,
+} from '../lib/firebase';
+import {
+  APPOINTMENT_LIMITS,
   validateConsultationForm,
+  validateNewsletterEmail,
   type ConsultationFormErrors,
   type ConsultationFormValues,
 } from '../utils/estimator';
+import { AdminInquiriesModal } from './AdminInquiriesModal';
 import {
   ARCHITECTURAL_EASE,
   BuiltexButton,
@@ -26,24 +34,32 @@ export function ContactFooterSection({
   prefilledMessage,
   onSelectLocationForQuote,
 }: ContactFooterSectionProps) {
+  const normalizeServiceOption = (svc: string) =>
+    svc === 'New Constructions' ? 'New Construction' : svc;
+
   const [formValues, setFormValues] = useState<ConsultationFormValues>({
     name: '',
     email: '',
     phone: '',
-    service: preselectedService || 'New Construction',
+    service: normalizeServiceOption(preselectedService) || 'New Construction',
     message: prefilledMessage || '',
   });
   const [errors, setErrors] = useState<ConsultationFormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [submittedSnapshot, setSubmittedSnapshot] = useState<ConsultationFormValues | null>(null);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'error' | 'subscribed'>('idle');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'submitting' | 'error' | 'subscribed'>('idle');
+  const [newsletterError, setNewsletterError] = useState<string | null>(null);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   useEffect(() => {
     if (preselectedService) {
-      setFormValues((prev) => ({ ...prev, service: preselectedService }));
+      setFormValues((prev) => ({ ...prev, service: normalizeServiceOption(preselectedService) }));
       setSubmittedRef(null);
+      setSubmitError(null);
     }
   }, [preselectedService]);
 
@@ -51,26 +67,36 @@ export function ContactFooterSection({
     if (prefilledMessage) {
       setFormValues((prev) => ({ ...prev, message: prefilledMessage }));
       setSubmittedRef(null);
+      setSubmitError(null);
     }
   }, [prefilledMessage]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const validationErrors = validateConsultationForm(formValues);
     setErrors(validationErrors);
+    setSubmitError(null);
 
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
-    const code = `BP-${String(Math.floor(100000 + Math.random() * 899999))}`;
-    setSubmittedSnapshot({ ...formValues });
-    setSubmittedRef(code);
+    setIsSubmitting(true);
+    try {
+      const result = await submitAppointment(formValues);
+      setSubmittedSnapshot(result.snapshot);
+      setSubmittedRef(result.referenceCode);
+    } catch (err) {
+      setSubmitError(formatFriendlyFirestoreError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setSubmittedRef(null);
     setSubmittedSnapshot(null);
+    setSubmitError(null);
     setErrors({});
     setFormValues({
       name: '',
@@ -81,15 +107,24 @@ export function ContactFooterSection({
     });
   };
 
-  const handleNewsletterSubmit = (e: FormEvent) => {
+  const handleNewsletterSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(newsletterEmail.trim())) {
+    setNewsletterError(null);
+    if (!validateNewsletterEmail(newsletterEmail)) {
       setNewsletterStatus('error');
+      setNewsletterError('Please enter a valid email address.');
       return;
     }
-    setNewsletterStatus('subscribed');
-    setNewsletterEmail('');
+
+    setNewsletterStatus('submitting');
+    try {
+      await subscribeToNewsletter(newsletterEmail);
+      setNewsletterStatus('subscribed');
+      setNewsletterEmail('');
+    } catch (err) {
+      setNewsletterStatus('error');
+      setNewsletterError(formatFriendlyFirestoreError(err));
+    }
   };
 
   const serviceOptions = [
@@ -186,7 +221,7 @@ export function ContactFooterSection({
                     <CheckCircle2 className="w-7 h-7 shrink-0" aria-hidden="true" />
                     <div>
                       <span className="text-xs font-semibold uppercase tracking-wider block">
-                        Appointment Request Logged
+                        Appointment Request Saved
                       </span>
                       <h3 className="font-display font-bold text-xl text-[#26232A]">
                         Thank you, {submittedSnapshot.name}
@@ -355,23 +390,50 @@ export function ContactFooterSection({
                     <textarea
                       id="quote-message"
                       rows={4}
+                      maxLength={APPOINTMENT_LIMITS.messageMax}
                       placeholder="Share your plot size, location in Chennai, number of floors, or expected start timeline..."
                       value={formValues.message}
-                      onChange={(e) => setFormValues((p) => ({ ...p, message: e.target.value }))}
+                      onChange={(e) => {
+                        setFormValues((p) => ({ ...p, message: e.target.value }));
+                        if (errors.message) setErrors((ePrev) => ({ ...ePrev, message: undefined }));
+                      }}
                       className="w-full px-4 py-3 text-base sm:text-sm bg-white border border-[#E6E4EB] rounded-lg focus:outline-none focus:border-[#D43F17]"
                     />
+                    {errors.message && (
+                      <p className="mt-1.5 text-xs font-medium text-[#B83210]" role="alert">
+                        {errors.message}
+                      </p>
+                    )}
                   </div>
+
+                  {submitError && (
+                    <div
+                      className="p-3.5 rounded-lg bg-[#FFF1EC] border border-[#F05228]/35 text-xs font-medium text-[#B83210]"
+                      role="alert"
+                    >
+                      {submitError}
+                    </div>
+                  )}
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pt-2">
                     <span className="text-xs text-[#26232A]/65">
-                      No spam. Direct review by Briicks Properties project engineers.
+                      Saved securely to Briicks Properties inquiry desk for review by our engineers.
                     </span>
                     <BuiltexButton
                       type="submit"
                       variant="accent-dark"
-                      className="w-full sm:w-auto min-h-[48px] px-6 py-3.5 text-sm"
+                      disabled={isSubmitting}
+                      showArrow={!isSubmitting}
+                      className="w-full sm:w-auto min-h-[48px] px-6 py-3.5 text-sm disabled:opacity-65"
                     >
-                      Submit Consultation Request
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                          <span>Saving Request...</span>
+                        </>
+                      ) : (
+                        'Submit Consultation Request'
+                      )}
                     </BuiltexButton>
                   </div>
                 </form>
@@ -500,15 +562,20 @@ export function ContactFooterSection({
                 />
                 <button
                   type="submit"
+                  disabled={newsletterStatus === 'submitting'}
                   aria-label="Subscribe to project updates"
-                  className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-[#D43F17] hover:bg-[#B83210] text-white transition-colors shrink-0 cursor-pointer"
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-[#D43F17] hover:bg-[#B83210] text-white transition-colors shrink-0 cursor-pointer disabled:opacity-60"
                 >
-                  <Send className="w-4 h-4" aria-hidden="true" />
+                  {newsletterStatus === 'submitting' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Send className="w-4 h-4" aria-hidden="true" />
+                  )}
                 </button>
               </form>
               {newsletterStatus === 'error' && (
                 <p className="text-xs text-[#F05228]" role="alert">
-                  Please enter a valid email address.
+                  {newsletterError || 'Please enter a valid email address.'}
                 </p>
               )}
               {newsletterStatus === 'subscribed' && (
@@ -521,7 +588,15 @@ export function ContactFooterSection({
 
           <div className="pt-7 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/55">
             <p>© {new Date().getFullYear()} Briicks Properties. All rights reserved.</p>
-            <div className="flex items-center gap-5">
+            <div className="flex flex-wrap items-center justify-center gap-5">
+              <button
+                type="button"
+                onClick={() => setIsAdminModalOpen(true)}
+                className="inline-flex items-center gap-1.5 py-1.5 text-white/65 hover:text-[#F05228] transition-colors cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Admin Leads</span>
+              </button>
               <a
                 href="https://www.facebook.com/briicks.official"
                 target="_blank"
@@ -550,6 +625,11 @@ export function ContactFooterSection({
           </div>
         </div>
       </footer>
+
+      <AdminInquiriesModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+      />
     </>
   );
 }

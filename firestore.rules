@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Reusable Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'priya.globallygi@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string
+        && email.size() >= 5
+        && email.size() <= 160
+        && email.matches('^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    function isValidService(serviceName) {
+      return serviceName is string
+        && serviceName in [
+          'New Construction',
+          'New Constructions',
+          'Turnkey House Construction',
+          'Interior Design & Works',
+          'Building Renovations',
+          'Structural Planning',
+          'Architectural Planning',
+          'Joint Venture'
+        ];
+    }
+
+    function isValidStatus(statusValue) {
+      return statusValue is string && statusValue in ['new', 'contacted', 'scheduled', 'closed'];
+    }
+
+    // 3. Entity Validation Blueprints (synced verbatim with firebase-blueprint.json)
+    function isValidAppointment(data) {
+      return data.keys().hasAll([
+          'referenceCode',
+          'name',
+          'email',
+          'phone',
+          'serviceType',
+          'message',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'referenceCode',
+          'name',
+          'email',
+          'phone',
+          'serviceType',
+          'message',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.referenceCode is string
+        && data.referenceCode.size() == 9
+        && data.referenceCode.matches('^BP-[0-9]{6}$')
+        && data.name is string
+        && data.name.size() >= 2
+        && data.name.size() <= 100
+        && isValidEmail(data.email)
+        && data.phone is string
+        && data.phone.size() >= 7
+        && data.phone.size() <= 25
+        && isValidService(data.serviceType)
+        && data.message is string
+        && data.message.size() <= 1500
+        && isValidStatus(data.status)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubscriber(data) {
+      return data.keys().hasAll(['email', 'createdAt'])
+        && data.keys().hasOnly(['email', 'createdAt'])
+        && isValidEmail(data.email)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'createdAt'])
+        && data.keys().hasOnly(['email', 'createdAt'])
+        && isValidEmail(data.email)
+        && data.createdAt is timestamp;
+    }
+
+    // 4. Appointments Collection (PII protected: public strict-validated create, admin-only reads/updates/deletes)
+    match /appointments/{appointmentId} {
+      allow get: if isValidId(appointmentId) && isAdmin();
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(appointmentId)
+        && isValidAppointment(incoming())
+        && incoming().status == 'new'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(appointmentId)
+        && isAdmin()
+        && isValidAppointment(incoming())
+        && incoming().referenceCode == existing().referenceCode
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (existing().status != 'closed' || isAdmin())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isValidId(appointmentId) && isAdmin();
+    }
+
+    // 5. Newsletter Subscribers Collection (PII protected)
+    match /newsletter_subscribers/{subscriberId} {
+      allow get: if isValidId(subscriberId) && isAdmin();
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(subscriberId)
+        && isValidSubscriber(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(subscriberId) && isAdmin();
+    }
+
+    // 6. Admins Collection (Bootstrapped admin managed)
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && isVerifiedUser() && (request.auth.uid == adminUid || isBootstrappedAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(adminUid)
+        && isBootstrappedAdmin()
+        && isValidAdmin(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(adminUid)
+        && isBootstrappedAdmin()
+        && isValidAdmin(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['email']);
+      allow delete: if isValidId(adminUid) && isBootstrappedAdmin();
+    }
+  }
+}

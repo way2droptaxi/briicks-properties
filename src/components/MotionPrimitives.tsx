@@ -218,6 +218,7 @@ interface BuiltexButtonProps {
   variant?: BuiltexButtonVariant;
   className?: string;
   showArrow?: boolean;
+  disabled?: boolean;
 }
 
 /**
@@ -230,6 +231,7 @@ export function BuiltexButton({
   variant = 'accent-dark',
   className = '',
   showArrow = true,
+  disabled = false,
 }: BuiltexButtonProps) {
   const variantClasses =
     variant === 'accent-light'
@@ -248,13 +250,14 @@ export function BuiltexButton({
   return (
     <motion.button
       type={type}
-      whileTap={{ scale: 0.98 }}
+      disabled={disabled}
+      whileTap={disabled ? undefined : { scale: 0.98 }}
       onClick={onClick}
       style={{ '--btn-hover-bg': hoverBg } as CSSProperties}
-      className={`builtex-btn inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F05228] ${variantClasses} ${className}`}
+      className={`builtex-btn inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F05228] ${variantClasses} ${className}`}
     >
       <span className="relative z-10 inline-flex items-center gap-2">
-        <span>{children}</span>
+        <span className="inline-flex items-center gap-2">{children}</span>
         {showArrow && (
           <ArrowUpRight className="w-4 h-4 builtex-btn-arrow shrink-0" aria-hidden="true" />
         )}

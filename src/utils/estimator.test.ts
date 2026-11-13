@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {
   calculateConstructionEstimate,
   formatINR,
+  generateReferenceCode,
+  sanitizeConsultationValues,
   validateConsultationForm,
+  validateNewsletterEmail,
 } from './estimator';
 
 test('calculateConstructionEstimate uses ₹2,350/sq.ft baseline for Essential Build', () => {
@@ -86,3 +89,50 @@ test('validateConsultationForm catches invalid fields and passes valid submissio
 
   assert.deepEqual(valid, {});
 });
+
+test('validateConsultationForm enforces blueprint maxLength and service allowlist', () => {
+  const oversized = validateConsultationForm({
+    name: 'K'.repeat(101),
+    email: `${'a'.repeat(150)}@example.com`,
+    phone: '+91 98401 12345 67890123456',
+    service: 'Unknown Service',
+    message: 'M'.repeat(1501),
+  });
+
+  assert.ok(oversized.name);
+  assert.ok(oversized.email);
+  assert.ok(oversized.phone);
+  assert.ok(oversized.service);
+  assert.ok(oversized.message);
+
+  // Supports both singular and plural from Services cards
+  const pluralService = validateConsultationForm({
+    name: 'Priya',
+    email: 'priya@example.com',
+    phone: '9600810952',
+    service: 'New Constructions',
+    message: '',
+  });
+  assert.deepEqual(pluralService, {});
+});
+
+test('sanitizeConsultationValues, validateNewsletterEmail, and generateReferenceCode conform to schema', () => {
+  const sanitized = sanitizeConsultationValues({
+    name: '  Arjun Nair  ',
+    email: '  ARJUN@Example.com ',
+    phone: ' +91 98401 12345 ',
+    service: 'Joint Venture',
+    message: '  Plot in Velachery  ',
+  });
+  assert.equal(sanitized.name, 'Arjun Nair');
+  assert.equal(sanitized.email, 'arjun@example.com');
+  assert.equal(sanitized.phone, '+91 98401 12345');
+  assert.equal(sanitized.message, 'Plot in Velachery');
+
+  assert.equal(validateNewsletterEmail('client@briicks.in'), true);
+  assert.equal(validateNewsletterEmail('not-an-email'), false);
+
+  const code = generateReferenceCode();
+  assert.match(code, /^BP-[0-9]{6}$/);
+});
+

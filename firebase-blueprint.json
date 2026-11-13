@@ -1,0 +1,154 @@
+{
+  "entities": {
+    "Appointment": {
+      "title": "Appointment",
+      "description": "A Book An Appointment construction consultation lead submitted by a visitor.",
+      "type": "object",
+      "properties": {
+        "referenceCode": {
+          "type": "string",
+          "minLength": 9,
+          "maxLength": 9,
+          "pattern": "^BP-[0-9]{6}$",
+          "description": "Human-readable inquiry reference code (BP-xxxxxx)."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "Full name of the client."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$",
+          "description": "Client email address."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 25,
+          "description": "Client phone number."
+        },
+        "serviceType": {
+          "type": "string",
+          "enum": [
+            "New Construction",
+            "New Constructions",
+            "Turnkey House Construction",
+            "Interior Design & Works",
+            "Building Renovations",
+            "Structural Planning",
+            "Architectural Planning",
+            "Joint Venture"
+          ],
+          "description": "Selected construction service category."
+        },
+        "message": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1500,
+          "description": "Plot location and project details provided by the client."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "new",
+            "contacted",
+            "scheduled",
+            "closed"
+          ],
+          "description": "Lead follow-up workflow status."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the inquiry was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the inquiry was last updated."
+        }
+      },
+      "required": [
+        "referenceCode",
+        "name",
+        "email",
+        "phone",
+        "serviceType",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Footer project updates email subscriber.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$",
+          "description": "Subscriber email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when subscribed."
+        }
+      },
+      "required": [
+        "email",
+        "createdAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized Briicks Properties admin UID marker.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 160
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "email",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/appointments/{appointmentId}": {
+      "schema": {
+        "$ref": "#/entities/Appointment"
+      },
+      "description": "Consultation and appointment inquiries from the website contact form."
+    },
+    "/newsletter_subscribers/{subscriberId}": {
+      "schema": {
+        "$ref": "#/entities/NewsletterSubscriber"
+      },
+      "description": "Email subscribers for Chennai construction cost guides and site tours."
+    },
+    "/admins/{adminUid}": {
+      "schema": {
+        "$ref": "#/entities/AdminUser"
+      },
+      "description": "Authorized admin documents for managing leads."
+    }
+  }
+}

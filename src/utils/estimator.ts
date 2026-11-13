@@ -123,6 +123,29 @@ export function formatINR(amount: number): string {
   }).format(safe);
 }
 
+export const ALLOWED_APPOINTMENT_SERVICES = [
+  'New Construction',
+  'New Constructions',
+  'Turnkey House Construction',
+  'Interior Design & Works',
+  'Building Renovations',
+  'Structural Planning',
+  'Architectural Planning',
+  'Joint Venture',
+] as const;
+
+export const APPOINTMENT_LIMITS = {
+  nameMin: 2,
+  nameMax: 100,
+  emailMin: 5,
+  emailMax: 160,
+  phoneMin: 7,
+  phoneMax: 25,
+  messageMax: 1500,
+} as const;
+
+export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export interface ConsultationFormValues {
   name: string;
   email: string;
@@ -133,26 +156,79 @@ export interface ConsultationFormValues {
 
 export type ConsultationFormErrors = Partial<Record<keyof ConsultationFormValues, string>>;
 
+export function sanitizeConsultationValues(values: ConsultationFormValues): ConsultationFormValues {
+  const normalizedService =
+    values.service.trim() === 'New Constructions'
+      ? 'New Constructions'
+      : values.service.trim();
+
+  return {
+    name: values.name.trim().slice(0, APPOINTMENT_LIMITS.nameMax),
+    email: values.email.trim().toLowerCase().slice(0, APPOINTMENT_LIMITS.emailMax),
+    phone: values.phone.trim().slice(0, APPOINTMENT_LIMITS.phoneMax),
+    service: normalizedService,
+    message: values.message.trim().slice(0, APPOINTMENT_LIMITS.messageMax),
+  };
+}
+
 export function validateConsultationForm(values: ConsultationFormValues): ConsultationFormErrors {
   const errors: ConsultationFormErrors = {};
+  const trimmedName = values.name.trim();
+  const trimmedEmail = values.email.trim();
+  const trimmedPhone = values.phone.trim();
+  const trimmedService = values.service.trim();
+  const trimmedMessage = values.message.trim();
 
-  if (!values.name.trim() || values.name.trim().length < 2) {
+  if (trimmedName.length < APPOINTMENT_LIMITS.nameMin) {
     errors.name = 'Please enter your full name (at least 2 characters).';
+  } else if (trimmedName.length > APPOINTMENT_LIMITS.nameMax) {
+    errors.name = `Full name must be ${APPOINTMENT_LIMITS.nameMax} characters or fewer.`;
   }
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!values.email.trim() || !emailPattern.test(values.email.trim())) {
+  if (
+    trimmedEmail.length < APPOINTMENT_LIMITS.emailMin ||
+    trimmedEmail.length > APPOINTMENT_LIMITS.emailMax ||
+    !EMAIL_REGEX.test(trimmedEmail)
+  ) {
     errors.email = 'Please provide a valid email address.';
   }
 
-  const digits = values.phone.replace(/\D/g, '');
-  if (digits.length < 10 || digits.length > 13) {
+  const digits = trimmedPhone.replace(/\D/g, '');
+  if (
+    trimmedPhone.length < APPOINTMENT_LIMITS.phoneMin ||
+    trimmedPhone.length > APPOINTMENT_LIMITS.phoneMax ||
+    digits.length < 10 ||
+    digits.length > 13
+  ) {
     errors.phone = 'Please enter a valid 10-digit phone number.';
   }
 
-  if (!values.service.trim()) {
-    errors.service = 'Please select the construction service you need.';
+  if (
+    !trimmedService ||
+    !ALLOWED_APPOINTMENT_SERVICES.includes(
+      trimmedService as (typeof ALLOWED_APPOINTMENT_SERVICES)[number]
+    )
+  ) {
+    errors.service = 'Please select a valid construction service.';
+  }
+
+  if (trimmedMessage.length > APPOINTMENT_LIMITS.messageMax) {
+    errors.message = `Project details must be ${APPOINTMENT_LIMITS.messageMax} characters or fewer.`;
   }
 
   return errors;
 }
+
+export function validateNewsletterEmail(email: string): boolean {
+  const trimmed = email.trim();
+  return (
+    trimmed.length >= APPOINTMENT_LIMITS.emailMin &&
+    trimmed.length <= APPOINTMENT_LIMITS.emailMax &&
+    EMAIL_REGEX.test(trimmed)
+  );
+}
+
+export function generateReferenceCode(): string {
+  return `BP-${String(Math.floor(100000 + Math.random() * 899999))}`;
+}
+
