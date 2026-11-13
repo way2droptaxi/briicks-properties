@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Building2 } from 'lucide-react';
 
 interface SafeImageProps {
@@ -10,6 +10,10 @@ interface SafeImageProps {
 
 export function SafeImage({ src, alt, className = '', fallbackLabel }: SafeImageProps) {
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
 
   if (hasError || !src) {
     return (
