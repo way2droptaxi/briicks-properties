@@ -1,3 +1,9 @@
+import aboutModernVillaImg from '../assets/images/about_modern_villa_1794546314304.jpg';
+import heroConstructionTeamImg from '../assets/images/hero_construction_team_1794546314488.jpg';
+import projectCommercialHubImg from '../assets/images/project_commercial_hub_1794546315328.jpg';
+import serviceStructuralSiteImg from '../assets/images/service_structural_site_1794546315373.jpg';
+import serviceTurnkeyInteriorImg from '../assets/images/service_turnkey_interior_1794546314964.jpg';
+
 export interface ServiceItem {
   id: string;
   number: string;
@@ -39,11 +45,11 @@ export const BRAND_INFO = {
 };
 
 export const HERO_MEDIA = {
-  background: '/src/assets/images/hero_construction_team_1794546314488.jpg',
-  aboutVilla: '/src/assets/images/about_modern_villa_1794546314304.jpg',
-  structuralSite: '/src/assets/images/service_structural_site_1794546315373.jpg',
-  turnkeyInterior: '/src/assets/images/service_turnkey_interior_1794546314964.jpg',
-  commercialHub: '/src/assets/images/project_commercial_hub_1794546315328.jpg',
+  background: heroConstructionTeamImg,
+  aboutVilla: aboutModernVillaImg,
+  structuralSite: serviceStructuralSiteImg,
+  turnkeyInterior: serviceTurnkeyInteriorImg,
+  commercialHub: projectCommercialHubImg,
 };
 
 export const ABOUT_HIGHLIGHTS = [
@@ -88,7 +94,7 @@ export const SERVICES: ServiceItem[] = [
       'Fe-550D steel reinforcement and ready-mix concrete pours',
       '200+ quality assurance checkpoints per floor',
     ],
-    image: '/src/assets/images/service_structural_site_1794546315373.jpg',
+    image: serviceStructuralSiteImg,
   },
   {
     id: 'turnkey-house-construction',
@@ -104,7 +110,7 @@ export const SERVICES: ServiceItem[] = [
       'Complete electrical, plumbing, waterproofing, and tiling',
       'Ready-to-move-in key handover with 10-year warranty',
     ],
-    image: '/src/assets/images/about_modern_villa_1794546314304.jpg',
+    image: aboutModernVillaImg,
   },
   {
     id: 'interior-design-works',
@@ -120,7 +126,7 @@ export const SERVICES: ServiceItem[] = [
       'Concealed ambient lighting and acoustic ceiling detailing',
       'Moisture-resistant BWP plywood and branded hardware',
     ],
-    image: '/src/assets/images/service_turnkey_interior_1794546314964.jpg',
+    image: serviceTurnkeyInteriorImg,
   },
   {
     id: 'building-renovations',
@@ -136,7 +142,7 @@ export const SERVICES: ServiceItem[] = [
       'Structural waterproofing and exterior elevation redesign',
       'Minimal-disruption phased renovation execution',
     ],
-    image: '/src/assets/images/project_commercial_hub_1794546315328.jpg',
+    image: projectCommercialHubImg,
   },
   {
     id: 'structural-planning',
@@ -152,7 +158,7 @@ export const SERVICES: ServiceItem[] = [
       'Bar bending schedules and structural working drawings',
       'Site reinforcement inspection prior to every concrete pour',
     ],
-    image: '/src/assets/images/service_structural_site_1794546315373.jpg',
+    image: serviceStructuralSiteImg,
   },
   {
     id: 'architectural-planning',
@@ -168,7 +174,7 @@ export const SERVICES: ServiceItem[] = [
       '3D exterior elevation renders and material moodboards',
       'Sanction-ready municipal approval documentation',
     ],
-    image: '/src/assets/images/about_modern_villa_1794546314304.jpg',
+    image: aboutModernVillaImg,
   },
   {
     id: 'joint-venture',
@@ -184,7 +190,7 @@ export const SERVICES: ServiceItem[] = [
       '100% capital deployment, approvals, and marketing',
       'Clear legal milestones and guaranteed handover timelines',
     ],
-    image: '/src/assets/images/project_commercial_hub_1794546315328.jpg',
+    image: projectCommercialHubImg,
   },
 ];
 
@@ -308,7 +314,7 @@ export const PROJECTS: ProjectItem[] = [
     durationMonths: 11,
     summary:
       'G+2 cantilevered concrete and terracotta-brick villa featuring courtyard cross-ventilation and a 10-year structural warranty.',
-    image: '/src/assets/images/about_modern_villa_1794546314304.jpg',
+    image: aboutModernVillaImg,
   },
   {
     id: 'kilpauk-turnkey',
@@ -319,7 +325,7 @@ export const PROJECTS: ProjectItem[] = [
     durationMonths: 10,
     summary:
       'Full turnkey build from soil testing to bespoke teakwood joinery, Italian marble flooring, and concealed lighting.',
-    image: '/src/assets/images/service_turnkey_interior_1794546314964.jpg',
+    image: serviceTurnkeyInteriorImg,
   },
   {
     id: 'mogappair-commercial',
@@ -330,7 +336,7 @@ export const PROJECTS: ProjectItem[] = [
     durationMonths: 14,
     summary:
       'Joint-venture commercial complex engineered with high-load flat slabs, glass facade glazing, and basement parking.',
-    image: '/src/assets/images/project_commercial_hub_1794546315328.jpg',
+    image: projectCommercialHubImg,
   },
   {
     id: 'adyar-structural-frame',
@@ -341,7 +347,7 @@ export const PROJECTS: ProjectItem[] = [
     durationMonths: 13,
     summary:
       'Precision RCC multi-story apartment block delivered ahead of schedule with 200+ quality checks verified on every slab.',
-    image: '/src/assets/images/service_structural_site_1794546315373.jpg',
+    image: serviceStructuralSiteImg,
   },
 ];
 
