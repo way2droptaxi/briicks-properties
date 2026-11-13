@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", "Noto Sans Tamil", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", "Noto Sans Tamil", ui-sans-serif, system-ui, sans-serif;
+  --color-briicks-orange: #F05228;
+  --color-briicks-orange-dark: #D43F17;
+  --color-briicks-ink: #26232A;
+  --color-briicks-obsidian: #19171C;
+  --color-briicks-stone: #F7F7F9;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: #26232a;
+    background-color: #ffffff;
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Builtex .image-anime diagonal glass shine sweep on hover (compositor-only) */
+.builtex-shine-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.builtex-shine-frame::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220%;
+  height: 180%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.34) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translate(-50%, -50%) rotate(-45deg) scaleY(0);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 2;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+}
+
+.builtex-shine-frame:hover::after,
+.group:hover .builtex-shine-frame::after {
+  transform: translate(-50%, -50%) rotate(-45deg) scaleY(1.35);
+  opacity: 0;
+}
+
+/* Builtex .btn-default skewed fill wipe + rotating arrow */
+.builtex-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.builtex-btn::after {
+  content: '';
+  position: absolute;
+  inset: -4px -20%;
+  background: var(--btn-hover-bg, #26232a);
+  transform: skewX(38deg) scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.builtex-btn:hover::after,
+.builtex-btn:focus-visible::after {
+  transform: skewX(38deg) scaleX(1.25);
+}
+
+.builtex-btn .builtex-btn-arrow {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.builtex-btn:hover .builtex-btn-arrow,
+.builtex-btn:focus-visible .builtex-btn-arrow {
+  transform: rotate(45deg);
+}
+
+@media (pointer: fine) {
+  html.briicks-custom-cursor,
+  html.briicks-custom-cursor * {
+    cursor: none !important;
+  }
+
+  html.briicks-custom-cursor
+    :is(
+      input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='button']):not([type='submit']),
+      textarea,
+      select
+    ) {
+    cursor: text !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  html.briicks-custom-cursor,
+  html.briicks-custom-cursor * {
+    cursor: auto !important;
+  }
+
+  .builtex-shine-frame::after,
+  .builtex-btn::after,
+  .builtex-btn .builtex-btn-arrow {
+    transition: none;
+  }
+}
